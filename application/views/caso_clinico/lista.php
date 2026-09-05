@@ -47,7 +47,7 @@
                           </td>
 
                           <?php
-                            $concluidos = explode(",", $caso_clinico->concluido);
+                            $concluidos = explode(",", (string) $caso_clinico->concluido);
 
                             $total_projetos = count($concluidos);
                             $projetos_concluidos = 0;

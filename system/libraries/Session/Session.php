@@ -127,10 +127,31 @@ class CI_Session {
 		}
 
 		// Sanitize the cookie, because apparently PHP doesn't do that for userspace handlers
+		//
+		// PHP >= 7.1 generates session IDs from session.sid_length/sid_bits_per_character
+		// instead of the old fixed 40-char hex format, so the expected pattern has to be
+		// built dynamically instead of hardcoded, or every incoming cookie gets rejected
+		// and a brand new session is started on every single request.
+		switch ((int) ini_get('session.sid_bits_per_character'))
+		{
+			case 4:
+				$sid_regexp = '[0-9a-f]';
+				break;
+			case 5:
+				$sid_regexp = '[0-9a-v]';
+				break;
+			case 6:
+				$sid_regexp = '[0-9a-zA-Z,-]';
+				break;
+			default:
+				$sid_regexp = '[0-9a-f]';
+		}
+		$sid_regexp .= '{'.((int) ini_get('session.sid_length')).'}';
+
 		if (isset($_COOKIE[$this->_config['cookie_name']])
 			&& (
 				! is_string($_COOKIE[$this->_config['cookie_name']])
-				OR ! preg_match('/^[0-9a-f]{40}$/', $_COOKIE[$this->_config['cookie_name']])
+				OR ! preg_match('#\A'.$sid_regexp.'\z#', $_COOKIE[$this->_config['cookie_name']])
 			)
 		)
 		{
